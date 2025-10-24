@@ -39,6 +39,15 @@
                         <p class="mt-2 text-gray-600">Sign in to your StudyBuddy account</p>
                     </div>
 
+                    <!-- Quick Login Info -->
+                    <div class="mb-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border border-blue-200">
+                        <p class="text-sm font-semibold text-gray-700 mb-2">🎓 Quick Login:</p>
+                        <div class="text-xs text-gray-600 space-y-1">
+                            <p><strong>Student:</strong> student@studybuddy.test / password</p>
+                            <p><strong>Teacher:</strong> teacher@studybuddy.test / password</p>
+                        </div>
+                    </div>
+
                     <!-- Session Status -->
                     <x-auth-session-status class="mb-4" :status="session('status')" />
 
