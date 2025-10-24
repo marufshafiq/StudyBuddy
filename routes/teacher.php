@@ -18,4 +18,12 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     // Teacher Dashboard
     Route::get('/dashboard', [TeacherDashboardController::class, 'index'])->name('dashboard');
     
+    // Students Management
+    Route::get('/students', [TeacherDashboardController::class, 'students'])->name('students');
+    
+    // Assignments Management
+    Route::get('/assignments', [TeacherDashboardController::class, 'assignments'])->name('assignments');
+    Route::post('/assignments', [TeacherDashboardController::class, 'storeTask'])->name('assignments.store');
+    Route::delete('/assignments/{task}', [TeacherDashboardController::class, 'deleteTask'])->name('assignments.delete');
+    
 });

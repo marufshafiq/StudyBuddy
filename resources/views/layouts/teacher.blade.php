@@ -31,15 +31,15 @@
                         <!-- Navigation Links -->
                         <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
                             <a href="{{ route('teacher.dashboard') }}" 
-                               class="inline-flex items-center px-1 pt-1 border-b-2 border-purple-500 text-sm font-medium text-gray-900">
+                               class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('teacher.dashboard') ? 'border-purple-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium">
                                 Dashboard
                             </a>
-                            <a href="#" 
-                               class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            <a href="{{ route('teacher.students') }}" 
+                               class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('teacher.students') ? 'border-purple-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium">
                                 Students
                             </a>
-                            <a href="#" 
-                               class="inline-flex items-center px-1 pt-1 border-b-2 border-transparent text-sm font-medium text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            <a href="{{ route('teacher.assignments') }}" 
+                               class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('teacher.assignments*') ? 'border-purple-500 text-gray-900' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300' }} text-sm font-medium">
                                 Assignments
                             </a>
                             <a href="#" 

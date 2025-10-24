@@ -31,15 +31,12 @@ class AuthenticatedSessionController extends Controller
         // Role-based redirection
         $user = Auth::user();
         
-        if ($user->role === 'teacher') {
+        if ($user->role === 'teacher' || $user->role === 'admin') {
             return redirect()->intended(route('teacher.dashboard'));
         }
         
-        if ($user->role === 'student') {
-            return redirect()->intended(route('student.dashboard'));
-        }
-
-        return redirect()->intended(route('dashboard', absolute: false));
+        // Default to student dashboard for all other roles
+        return redirect()->intended(route('student.dashboard'));
     }
 
     /**

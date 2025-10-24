@@ -46,4 +46,37 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Get the tasks assigned to the user (as student).
+     */
+    public function tasks()
+    {
+        return $this->hasMany(Task::class, 'student_id');
+    }
+
+    /**
+     * Get the tasks created by the user (as teacher).
+     */
+    public function assignedTasks()
+    {
+        return $this->hasMany(Task::class, 'teacher_id');
+    }
+
+    /**
+     * Get the meetings for the user.
+     */
+    public function meetings()
+    {
+        return $this->hasMany(Meeting::class, 'student_id');
+    }
+
+    /**
+     * Get the notifications for the user.
+     */
+    public function notifications()
+    {
+        return $this->hasMany(Notification::class, 'user_id');
+    }
 }
+

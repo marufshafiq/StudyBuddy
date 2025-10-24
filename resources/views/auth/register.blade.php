@@ -58,6 +58,17 @@
                             <x-input-error :messages="$errors->get('email')" class="mt-2" />
                         </div>
 
+                        <!-- Role Selection -->
+                        <div>
+                            <label for="role" class="block text-sm font-medium text-gray-700 mb-2">I am a</label>
+                            <select id="role" name="role" required
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition bg-white">
+                                <option value="student" {{ old('role') == 'student' ? 'selected' : '' }}>Student</option>
+                                <option value="teacher" {{ old('role') == 'teacher' ? 'selected' : '' }}>Teacher</option>
+                            </select>
+                            <x-input-error :messages="$errors->get('role')" class="mt-2" />
+                        </div>
+
                         <!-- Password -->
                         <div>
                             <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
