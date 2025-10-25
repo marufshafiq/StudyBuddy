@@ -102,6 +102,44 @@ class StudentDashboardController extends Controller
     }
 
     /**
+     * Display all tasks for the student.
+     */
+    public function tasks()
+    {
+        $student = Auth::user();
+        $studentId = $student->id;
+
+        // Fetch all tasks for the student with pagination
+        $tasks = Task::forStudent($studentId)
+            ->with('teacher')
+            ->orderByRaw("CASE 
+                WHEN status = 'pending' THEN 1 
+                WHEN status = 'in_progress' THEN 2 
+                WHEN status = 'submitted' THEN 3 
+                WHEN status = 'completed' THEN 4 
+                ELSE 5 END")
+            ->orderBy('deadline', 'asc')
+            ->paginate(15);
+
+        // Calculate task statistics
+        $allTasks = Task::forStudent($studentId)->get();
+        $totalTasks = $allTasks->count();
+        $completedTasks = $allTasks->where('status', 'completed')->count();
+        $pendingTasks = $allTasks->whereIn('status', ['pending', 'in_progress'])->count();
+        $submittedTasks = $allTasks->where('status', 'submitted')->count();
+        $overdueTasks = $allTasks->filter(fn($task) => $task->isOverdue())->count();
+
+        return view('student.tasks', compact(
+            'tasks',
+            'totalTasks',
+            'completedTasks',
+            'pendingTasks',
+            'submittedTasks',
+            'overdueTasks'
+        ));
+    }
+
+    /**
      * Mark a task as completed.
      */
     public function completeTask(Request $request, Task $task)

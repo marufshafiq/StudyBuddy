@@ -18,6 +18,9 @@ Route::middleware(['auth', 'student'])->prefix('student')->name('student.')->gro
     // Student Dashboard
     Route::get('/dashboard', [StudentDashboardController::class, 'index'])->name('dashboard');
     
+    // My Tasks
+    Route::get('/tasks', [StudentDashboardController::class, 'tasks'])->name('tasks');
+    
     // Task Management
     Route::patch('/task/{task}/complete', [StudentDashboardController::class, 'completeTask'])->name('task.complete');
     
