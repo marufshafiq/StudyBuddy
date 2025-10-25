@@ -56,19 +56,43 @@ class User extends Authenticatable
     }
 
     /**
-     * Get the tasks created by the user (as teacher).
+     * Get the tasks assigned to the user (for admin view - as student).
      */
     public function assignedTasks()
+    {
+        return $this->hasMany(Task::class, 'student_id');
+    }
+
+    /**
+     * Get the tasks created by the user (as teacher).
+     */
+    public function createdTasks()
     {
         return $this->hasMany(Task::class, 'teacher_id');
     }
 
     /**
-     * Get the meetings for the user.
+     * Get the meetings for the user (as student).
      */
     public function meetings()
     {
         return $this->hasMany(Meeting::class, 'student_id');
+    }
+
+    /**
+     * Get the meetings for the user (as student - for admin view).
+     */
+    public function studentMeetings()
+    {
+        return $this->hasMany(Meeting::class, 'student_id');
+    }
+
+    /**
+     * Get the meetings hosted by the user (as teacher).
+     */
+    public function teacherMeetings()
+    {
+        return $this->hasMany(Meeting::class, 'teacher_id');
     }
 
     /**
@@ -77,6 +101,14 @@ class User extends Authenticatable
     public function notifications()
     {
         return $this->hasMany(Notification::class, 'user_id');
+    }
+
+    /**
+     * Get the resources saved by the user.
+     */
+    public function savedResources()
+    {
+        return $this->hasMany(Resource::class, 'user_id');
     }
 }
 
