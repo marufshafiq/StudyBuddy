@@ -26,4 +26,11 @@ Route::middleware(['auth', 'teacher'])->prefix('teacher')->name('teacher.')->gro
     Route::post('/assignments', [TeacherDashboardController::class, 'storeTask'])->name('assignments.store');
     Route::delete('/assignments/{task}', [TeacherDashboardController::class, 'deleteTask'])->name('assignments.delete');
     
+    // Meetings Management
+    Route::get('/meetings', [TeacherDashboardController::class, 'meetings'])->name('meetings');
+    Route::post('/meetings', [TeacherDashboardController::class, 'createMeeting'])->name('meetings.create');
+    Route::post('/meetings/{meeting}/approve', [TeacherDashboardController::class, 'approveMeeting'])->name('meetings.approve');
+    Route::post('/meetings/{meeting}/reject', [TeacherDashboardController::class, 'rejectMeeting'])->name('meetings.reject');
+    Route::delete('/meetings/{meeting}', [TeacherDashboardController::class, 'cancelMeeting'])->name('meetings.cancel');
+    
 });

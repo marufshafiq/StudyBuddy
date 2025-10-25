@@ -19,12 +19,17 @@ class Meeting extends Model
         'duration_minutes',
         'location',
         'meeting_link',
+        'google_meet_id',
+        'google_meet_data',
         'status',
+        'request_status',
+        'rejection_reason',
     ];
 
     protected $casts = [
         'scheduled_at' => 'datetime',
         'duration_minutes' => 'integer',
+        'google_meet_data' => 'array',
     ];
 
     /**
@@ -59,6 +64,31 @@ class Meeting extends Model
     public function scopeForStudent($query, $studentId)
     {
         return $query->where('student_id', $studentId);
+    }
+
+    /**
+     * Scope a query to only include meetings for a specific teacher.
+     */
+    public function scopeForTeacher($query, $teacherId)
+    {
+        return $query->where('teacher_id', $teacherId);
+    }
+
+    /**
+     * Scope a query to only include pending meeting requests.
+     */
+    public function scopePendingRequests($query)
+    {
+        return $query->where('request_status', 'pending')
+                    ->orderBy('scheduled_at', 'asc');
+    }
+
+    /**
+     * Scope a query to only include approved meetings.
+     */
+    public function scopeApproved($query)
+    {
+        return $query->where('request_status', 'approved');
     }
 
     /**

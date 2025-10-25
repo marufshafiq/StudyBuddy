@@ -21,6 +21,12 @@ Route::middleware(['auth', 'student'])->prefix('student')->name('student.')->gro
     // My Tasks
     Route::get('/tasks', [StudentDashboardController::class, 'tasks'])->name('tasks');
     
+    // Meetings
+    Route::get('/meetings', [StudentDashboardController::class, 'meetings'])->name('meetings');
+    Route::post('/meetings/request', [StudentDashboardController::class, 'requestMeeting'])->name('meetings.request');
+    Route::delete('/meetings/{meeting}', [StudentDashboardController::class, 'cancelMeeting'])->name('meetings.cancel');
+    Route::delete('/meetings/{meeting}/delete', [StudentDashboardController::class, 'deleteMeeting'])->name('meetings.delete');
+    
     // Task Management
     Route::patch('/task/{task}/complete', [StudentDashboardController::class, 'completeTask'])->name('task.complete');
     

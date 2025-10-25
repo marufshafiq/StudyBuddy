@@ -8,6 +8,7 @@ use App\Models\Task;
 use App\Models\Meeting;
 use App\Models\Notification;
 use App\Models\User;
+use App\Services\ZoomService;
 
 class TeacherDashboardController extends Controller
 {
@@ -182,6 +183,194 @@ class TeacherDashboardController extends Controller
         $task->delete();
 
         return back()->with('success', 'Task deleted successfully!');
+    }
+
+    /**
+     * Display meetings page with requests and scheduled meetings.
+     */
+    public function meetings()
+    {
+        $teacher = Auth::user();
+        
+        // Get pending meeting requests from students
+        $pendingRequests = Meeting::forTeacher($teacher->id)
+            ->pendingRequests()
+            ->with('student')
+            ->get();
+            
+        // Get approved upcoming meetings
+        $upcomingMeetings = Meeting::forTeacher($teacher->id)
+            ->approved()
+            ->upcoming()
+            ->with('student')
+            ->get();
+            
+        // Get past meetings
+        $pastMeetings = Meeting::forTeacher($teacher->id)
+            ->approved()
+            ->where('scheduled_at', '<', now())
+            ->with('student')
+            ->orderBy('scheduled_at', 'desc')
+            ->limit(10)
+            ->get();
+        
+        // Get all students for creating meetings
+        $students = User::where('role', 'student')->get();
+        
+        return view('teacher.meetings', compact(
+            'pendingRequests',
+            'upcomingMeetings',
+            'pastMeetings',
+            'students'
+        ));
+    }
+
+    /**
+     * Create a new meeting with a student.
+     */
+    public function createMeeting(Request $request, ZoomService $zoomService)
+    {
+        $teacher = Auth::user();
+        
+        $request->validate([
+            'student_id' => ['required', 'exists:users,id'],
+            'title' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string'],
+            'scheduled_at' => ['required', 'date', 'after:now'],
+            'duration_minutes' => ['required', 'integer', 'min:15', 'max:180'],
+        ]);
+        
+        // Verify the student_id is actually a student
+        $student = User::findOrFail($request->student_id);
+        if ($student->role !== 'student') {
+            return back()->withErrors(['student_id' => 'Selected user must be a student.']);
+        }
+        
+        // Create meeting
+        $meeting = Meeting::create([
+            'student_id' => $request->student_id,
+            'teacher_id' => $teacher->id,
+            'title' => $request->title,
+            'description' => $request->description,
+            'scheduled_at' => $request->scheduled_at,
+            'duration_minutes' => $request->duration_minutes,
+            'status' => 'scheduled',
+            'request_status' => 'approved', // Teacher created, so auto-approved
+        ]);
+        
+        // Create Zoom meeting link automatically
+        $meetLink = $zoomService->createMeetingLink($meeting);
+        
+        // Create notification for student
+        Notification::create([
+            'user_id' => $request->student_id,
+            'sender_id' => $teacher->id,
+            'type' => 'meeting',
+            'title' => 'Meeting Scheduled',
+            'message' => $teacher->name . ' has scheduled a meeting with you: ' . $request->title,
+            'is_read' => false,
+        ]);
+        
+        return back()->with('success', 'Meeting created successfully with Zoom link!');
+    }
+
+    /**
+     * Approve a meeting request from a student.
+     */
+    public function approveMeeting(Meeting $meeting, ZoomService $zoomService)
+    {
+        $teacher = Auth::user();
+        
+        // Ensure the meeting is for this teacher
+        if ($meeting->teacher_id !== $teacher->id) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        // Update meeting status
+        $meeting->update([
+            'request_status' => 'approved',
+        ]);
+        
+        // Create Zoom meeting link automatically
+        $meetLink = $zoomService->createMeetingLink($meeting);
+        
+        // Notify student
+        Notification::create([
+            'user_id' => $meeting->student_id,
+            'sender_id' => $teacher->id,
+            'type' => 'meeting',
+            'title' => 'Meeting Request Approved',
+            'message' => 'Your meeting request "' . $meeting->title . '" has been approved! Zoom link is ready.',
+            'is_read' => false,
+        ]);
+        
+        return back()->with('success', 'Meeting request approved and Zoom link created!');
+    }
+
+    /**
+     * Reject a meeting request from a student.
+     */
+    public function rejectMeeting(Request $request, Meeting $meeting)
+    {
+        $teacher = Auth::user();
+        
+        // Ensure the meeting is for this teacher
+        if ($meeting->teacher_id !== $teacher->id) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        $request->validate([
+            'rejection_reason' => ['nullable', 'string', 'max:500'],
+        ]);
+        
+        // Update meeting status
+        $meeting->update([
+            'request_status' => 'rejected',
+            'status' => 'cancelled',
+            'rejection_reason' => $request->rejection_reason,
+        ]);
+        
+        // Notify student
+        Notification::create([
+            'user_id' => $meeting->student_id,
+            'sender_id' => $teacher->id,
+            'type' => 'meeting',
+            'title' => 'Meeting Request Declined',
+            'message' => 'Your meeting request "' . $meeting->title . '" has been declined.' . ($request->rejection_reason ? ' Reason: ' . $request->rejection_reason : ''),
+            'is_read' => false,
+        ]);
+        
+        return back()->with('success', 'Meeting request rejected.');
+    }
+
+    /**
+     * Cancel a meeting.
+     */
+    public function cancelMeeting(Meeting $meeting, ZoomService $zoomService)
+    {
+        $teacher = Auth::user();
+        
+        // Ensure the meeting belongs to this teacher
+        if ($meeting->teacher_id !== $teacher->id) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        // Delete Zoom meeting via API
+        $zoomService->cancelMeeting($meeting);
+        
+        // Notify student if meeting was approved
+        if ($meeting->request_status === 'approved') {
+            Notification::create([
+                'user_id' => $meeting->student_id,
+                'sender_id' => $teacher->id,
+                'type' => 'meeting',
+                'title' => 'Meeting Cancelled',
+                'message' => $teacher->name . ' has cancelled the meeting: ' . $meeting->title,
+                'is_read' => false,
+            ]);
+        }
+        
+        return back()->with('success', 'Meeting cancelled successfully.');
     }
 }
 
