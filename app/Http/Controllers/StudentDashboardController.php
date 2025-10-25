@@ -8,7 +8,9 @@ use App\Models\Task;
 use App\Models\Meeting;
 use App\Models\Notification;
 use App\Models\User;
+use App\Models\Resource;
 use App\Services\ZoomService;
+use App\Services\OpenLibraryService;
 
 class StudentDashboardController extends Controller
 {
@@ -311,4 +313,170 @@ class StudentDashboardController extends Controller
 
         return back()->with('success', 'Notification marked as read!');
     }
+
+    /**
+     * Display the resources (books) page
+     */
+    public function resources(OpenLibraryService $libraryService)
+    {
+        $student = Auth::user();
+        
+        // Get saved resources
+        $savedResources = Resource::where('user_id', $student->id)
+            ->latest()
+            ->get();
+        
+        $favoriteResources = Resource::where('user_id', $student->id)
+            ->where('is_favorite', true)
+            ->latest()
+            ->get();
+        
+        // Get popular subjects for browsing
+        $subjects = $libraryService->getPopularSubjects();
+        
+        return view('student.resources', compact('savedResources', 'favoriteResources', 'subjects'));
+    }
+
+    /**
+     * Search for books via OpenLibrary API
+     */
+    public function searchBooks(Request $request, OpenLibraryService $libraryService)
+    {
+        $request->validate([
+            'query' => 'required|string|min:2',
+        ]);
+        
+        $query = $request->input('query');
+        $type = $request->input('type', 'search'); // 'search' or 'subject'
+        
+        if ($type === 'subject') {
+            $books = $libraryService->searchBySubject($query, 30);
+        } else {
+            $books = $libraryService->searchBooks($query, 30);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'books' => $books,
+            'query' => $query,
+        ]);
+    }
+
+    /**
+     * Save a book to student's resources
+     */
+    public function saveBook(Request $request)
+    {
+        $student = Auth::user();
+        
+        $request->validate([
+            'title' => 'required|string|max:500',
+            'authors' => 'nullable|array',
+            'openlibrary_key' => 'nullable|string',
+            'cover_url' => 'nullable|url',
+            'isbn' => 'nullable|string',
+            'first_publish_year' => 'nullable|integer',
+            'subjects' => 'nullable|array',
+            'description' => 'nullable|string',
+            'read_url' => 'nullable|url',
+            'has_fulltext' => 'nullable|boolean',
+        ]);
+        
+        // Check if already saved
+        $exists = Resource::where('user_id', $student->id)
+            ->where('openlibrary_key', $request->openlibrary_key)
+            ->exists();
+        
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This book is already in your library.',
+            ], 422);
+        }
+        
+        $resource = Resource::create([
+            'user_id' => $student->id,
+            'type' => 'book',
+            'title' => $request->title,
+            'description' => $request->description,
+            'authors' => $request->authors ?? [],
+            'openlibrary_key' => $request->openlibrary_key,
+            'cover_url' => $request->cover_url,
+            'isbn' => $request->isbn,
+            'first_publish_year' => $request->first_publish_year,
+            'subjects' => $request->subjects ?? [],
+            'read_url' => $request->read_url,
+            'has_fulltext' => $request->has_fulltext ?? false,
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Book saved to your library!',
+            'resource' => $resource,
+        ]);
+    }
+
+    /**
+     * Remove a book from resources
+     */
+    public function removeBook(Resource $resource)
+    {
+        $student = Auth::user();
+        
+        if ($resource->user_id !== $student->id) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        $resource->delete();
+        
+        return back()->with('success', 'Book removed from your library.');
+    }
+
+    /**
+     * Toggle favorite status
+     */
+    public function toggleFavorite(Resource $resource)
+    {
+        $student = Auth::user();
+        
+        if ($resource->user_id !== $student->id) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        $resource->update([
+            'is_favorite' => !$resource->is_favorite,
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'is_favorite' => $resource->is_favorite,
+            'message' => $resource->is_favorite ? 'Added to favorites!' : 'Removed from favorites.',
+        ]);
+    }
+
+    /**
+     * Update notes for a resource
+     */
+    public function updateNotes(Request $request, Resource $resource)
+    {
+        $student = Auth::user();
+        
+        if ($resource->user_id !== $student->id) {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        $request->validate([
+            'notes' => 'nullable|string|max:2000',
+        ]);
+        
+        $resource->update([
+            'notes' => $request->notes,
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Notes updated successfully!',
+        ]);
+    }
 }
+

@@ -1,3 +1,4 @@
+
 @extends('layouts.teacher')
 
 @section('content')

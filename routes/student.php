@@ -21,6 +21,14 @@ Route::middleware(['auth', 'student'])->prefix('student')->name('student.')->gro
     // My Tasks
     Route::get('/tasks', [StudentDashboardController::class, 'tasks'])->name('tasks');
     
+    // Resources (Books & Learning Materials)
+    Route::get('/resources', [StudentDashboardController::class, 'resources'])->name('resources');
+    Route::get('/resources/search', [StudentDashboardController::class, 'searchBooks'])->name('resources.search');
+    Route::post('/resources/save', [StudentDashboardController::class, 'saveBook'])->name('resources.save');
+    Route::delete('/resources/{resource}', [StudentDashboardController::class, 'removeBook'])->name('resources.remove');
+    Route::patch('/resources/{resource}/favorite', [StudentDashboardController::class, 'toggleFavorite'])->name('resources.favorite');
+    Route::patch('/resources/{resource}/notes', [StudentDashboardController::class, 'updateNotes'])->name('resources.notes');
+    
     // Meetings
     Route::get('/meetings', [StudentDashboardController::class, 'meetings'])->name('meetings');
     Route::post('/meetings/request', [StudentDashboardController::class, 'requestMeeting'])->name('meetings.request');
